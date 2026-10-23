@@ -8,15 +8,25 @@ dotenv.config();
 const isProduction = process.env.NODE_ENV === 'production';
 const isTest = process.env.NODE_ENV === 'test';
 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 5050,
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  FRONTEND_URL,
   MONGODB_URI: process.env.MONGODB_URI || '',
   MONGODB_DATABASE: process.env.MONGODB_DATABASE || 'ai_chatbot_platform',
   JWT_SECRET: process.env.JWT_SECRET || (isProduction ? '' : 'dev_fallback_secret_for_local_development_only_min32chars'),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '24h',
   ADMIN_COOKIE_NAME: process.env.ADMIN_COOKIE_NAME || 'admin_token',
+  // Single source of truth for allowed browser origins.
+  // Used by both CORS middleware and server-side CSRF origin validation.
+  // Add additional production domains here as the platform grows.
+  ALLOWED_ORIGINS: [
+    FRONTEND_URL,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ],
   isProduction,
   isTest,
 };

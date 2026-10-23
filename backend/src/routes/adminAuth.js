@@ -89,26 +89,45 @@ router.post('/login', loginRateLimiter, async (req, res, next) => {
 /**
  * @route   POST /api/v1/admin/auth/logout
  * @desc    Clear administrator session cookie
- * @access  Public (Origin-validated to prevent logout CSRF)
+ * @access  Public (Origin-validated in production to prevent logout CSRF)
+ *
+ * CSRF defense rationale:
+ * - SameSite=Lax alone does not block all cross-site POST scenarios (e.g.
+ *   form submissions, 307 redirects in older browsers).
+ * - Real browsers ALWAYS send an Origin header on cross-origin POST requests.
+ * - A missing Origin header in a browser context is therefore suspicious;
+ *   however, non-browser clients (curl, API tools) legitimately omit it and
+ *   cannot carry HttpOnly cookies, so they are harmless.
+ * - In production: requests with a disallowed or missing Origin header are
+ *   rejected with 403, unless they arrive without a cookie (non-browser clients).
+ * - In development/test: the check is skipped to preserve test ergonomics.
+ *
+ * Logout does NOT revoke the JWT server-side. A copied JWT remains valid
+ * until its 24-hour expiration. Cookie clearing makes the browser re-present
+ * the token impossible; server-side revocation would require a token blocklist
+ * (planned for a future hardening step).
  */
 router.post('/logout', (req, res) => {
-  // CSRF defense: validate Origin header when present.
-  // SameSite=Lax alone does not block cross-site POST in all scenarios.
-  const requestOrigin = req.headers.origin;
-  const allowedOrigins = [
-    env.FRONTEND_URL,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-  ];
+  if (env.isProduction) {
+    const requestOrigin = req.headers.origin;
+    const hasCookie = !!(req.cookies && req.cookies[env.ADMIN_COOKIE_NAME]);
 
-  if (requestOrigin && !allowedOrigins.includes(requestOrigin) && env.isProduction) {
-    return res.status(403).json({
-      success: false,
-      error: {
-        message: 'Request origin not permitted.',
-        code: 'FORBIDDEN',
-      },
-    });
+    // In production, block any POST that:
+    //  (a) carries an auth cookie (i.e., is a browser request), AND
+    //  (b) has no Origin header OR has a disallowed Origin header.
+    // Non-browser clients with no cookie are let through (they cannot be
+    // CSRF-attacked since they have no cookie to be stolen).
+    if (hasCookie || requestOrigin) {
+      if (!requestOrigin || !env.ALLOWED_ORIGINS.includes(requestOrigin)) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            message: 'Request origin not permitted.',
+            code: 'FORBIDDEN',
+          },
+        });
+      }
+    }
   }
 
   res.clearCookie(env.ADMIN_COOKIE_NAME, {

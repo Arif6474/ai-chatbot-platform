@@ -12,18 +12,12 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS configuration (configured strictly from environment, not wildcard)
-const allowedOrigins = [
-  env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-];
-
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow non-browser requests (e.g. mobile apps, curl, server-to-server) in development/test
+    // Allow non-browser requests (e.g. curl, server-to-server) in development/test.
+    // In production, only requests from the configured frontend origin are accepted.
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || !env.isProduction) {
+    if (env.ALLOWED_ORIGINS.indexOf(origin) !== -1 || !env.isProduction) {
       return callback(null, true);
     }
     return callback(new Error('CORS policy: Not allowed by origin policy'));
