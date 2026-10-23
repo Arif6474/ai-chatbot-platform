@@ -1,0 +1,7 @@
+{
+  "name": "@ai-chatbot/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "description": "Reserved workspace for shared constants and validation utilities"
+}

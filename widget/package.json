@@ -1,0 +1,6 @@
+{
+  "name": "@ai-chatbot/widget",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reserved workspace for the embeddable client website chat widget (Step 8)"
+}

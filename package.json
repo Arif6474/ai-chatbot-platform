@@ -1,0 +1,20 @@
+{
+  "name": "ai-chatbot-platform-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant AI Chatbot Platform Monorepo",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "widget",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace=@ai-chatbot/backend run dev",
+    "dev:frontend": "npm --workspace=@ai-chatbot/frontend run dev",
+    "build:frontend": "npm --workspace=@ai-chatbot/frontend run build",
+    "start:backend": "npm --workspace=@ai-chatbot/backend run start",
+    "test:backend": "npm --workspace=@ai-chatbot/backend run test",
+    "test": "npm --workspace=@ai-chatbot/backend run test"
+  }
+}
