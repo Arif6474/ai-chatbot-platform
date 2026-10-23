@@ -17,8 +17,14 @@ function notFoundHandler(req, res, next) {
  * Global Error Handler Middleware
  */
 function errorHandler(err, req, res, next) {
-  const statusCode = err.status || err.statusCode || 500;
-  
+  let statusCode = err.status || err.statusCode || 500;
+  let errorCode = err.code || 'INTERNAL_ERROR';
+
+  if (err.name === 'ValidationError') {
+    statusCode = 400;
+    errorCode = 'VALIDATION_ERROR';
+  }
+
   // Safe error response object
   const response = {
     success: false,
@@ -26,7 +32,7 @@ function errorHandler(err, req, res, next) {
       message: statusCode === 500 && env.isProduction 
         ? 'Internal Server Error' 
         : err.message || 'An unexpected error occurred',
-      code: err.code || 'INTERNAL_ERROR',
+      code: errorCode,
     },
   };
 

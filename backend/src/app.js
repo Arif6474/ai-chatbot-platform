@@ -5,6 +5,8 @@ const cookieParser = require('cookie-parser');
 const env = require('./config/env');
 const healthRoutes = require('./routes/health');
 const adminAuthRoutes = require('./routes/adminAuth');
+const adminTenantRoutes = require('./routes/adminTenants');
+const adminContentRoutes = require('./routes/adminContent');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -38,6 +40,12 @@ app.use('/api/v1', healthRoutes);
 
 // Mount Admin Authentication routes
 app.use('/api/v1/admin/auth', adminAuthRoutes);
+
+// Mount Admin Tenant Management routes
+app.use('/api/v1/admin/tenants', adminTenantRoutes);
+
+// Mount Admin Content Management routes (tenant-scoped)
+app.use('/api/v1/admin/tenants/:tenantId/content', adminContentRoutes);
 
 // Catch-all 404 handler
 app.use(notFoundHandler);

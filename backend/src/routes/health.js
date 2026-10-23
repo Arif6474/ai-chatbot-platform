@@ -1,6 +1,5 @@
 const express = require('express');
-const env = require('../config/env');
-const { getDatabaseStatus } = require('../config/database');
+const healthController = require('../controllers/healthController');
 
 const router = express.Router();
 
@@ -9,15 +8,6 @@ const router = express.Router();
  * @desc    API health and operational readiness status
  * @access  Public
  */
-router.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    service: 'ai-chatbot-backend',
-    timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
-    environment: env.NODE_ENV,
-    database: getDatabaseStatus(),
-  });
-});
+router.get('/health', healthController.getHealth);
 
 module.exports = router;
