@@ -15,6 +15,7 @@
     "build:frontend": "npm --workspace=@ai-chatbot/frontend run build",
     "start:backend": "npm --workspace=@ai-chatbot/backend run start",
     "test:backend": "npm --workspace=@ai-chatbot/backend run test",
-    "test": "npm --workspace=@ai-chatbot/backend run test"
+    "test": "npm --workspace=@ai-chatbot/backend run test",
+    "create-admin": "npm --workspace=@ai-chatbot/backend run create-admin"
   }
 }
