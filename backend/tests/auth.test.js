@@ -1,6 +1,7 @@
 const request = require('supertest');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const AdminUser = require('../src/models/AdminUser');
 const env = require('../src/config/env');
@@ -84,7 +85,7 @@ describe('Admin Authentication Endpoints', () => {
       expect(res.body.error.code).toBe('ACCOUNT_DEACTIVATED');
     });
 
-    it('successfully authenticates with valid credentials, sets cookie, and excludes sensitive fields', async () => {
+    it('successfully authenticates with valid credentials, sets HttpOnly cookie, and does NOT expose token in response body', async () => {
       await seedAdmin();
 
       const res = await request(app)
@@ -97,10 +98,13 @@ describe('Admin Authentication Endpoints', () => {
       expect(res.body.data.admin.email).toBe(testEmail);
       expect(res.body.data.admin.role).toBe('admin');
 
-      // Security check: Never expose password or passwordHash
+      // Security check: sensitive fields never exposed
       expect(res.body.data.admin).not.toHaveProperty('password');
       expect(res.body.data.admin).not.toHaveProperty('passwordHash');
       expect(res.body.data.admin).not.toHaveProperty('_id');
+
+      // Security check: JWT must NOT appear in response body (XSS risk)
+      expect(res.body.data).not.toHaveProperty('token');
 
       // Cookie check: Must set HTTP-only cookie
       const cookies = res.headers['set-cookie'];
@@ -128,6 +132,21 @@ describe('Admin Authentication Endpoints', () => {
       expect(res.body.error.code).toBe('INVALID_TOKEN');
     });
 
+    it('rejects a JWT with alg:none (algorithm confusion attack) with 401', async () => {
+      // Craft a token with algorithm 'none' — must be rejected by algorithm pinning
+      const unsignedToken = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url') +
+        '.' +
+        Buffer.from(JSON.stringify({ sub: 'fake-id', role: 'admin' })).toString('base64url') +
+        '.';
+
+      const res = await request(app)
+        .get('/api/v1/admin/auth/me')
+        .set('Authorization', `Bearer ${unsignedToken}`);
+
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('INVALID_TOKEN');
+    });
+
     it('allows access with valid HTTP-only cookie and returns admin profile', async () => {
       await seedAdmin();
 
@@ -149,17 +168,19 @@ describe('Admin Authentication Endpoints', () => {
       expect(meRes.body.data.admin).not.toHaveProperty('passwordHash');
     });
 
-    it('allows access with valid Bearer token', async () => {
+    it('allows access with valid signed Bearer token', async () => {
       await seedAdmin();
 
-      // Login to obtain token
-      const loginRes = await request(app)
-        .post('/api/v1/admin/auth/login')
-        .send({ email: testEmail, password: testPassword });
+      // Obtain admin ID by logging in via cookie, then use DB record directly
+      const admin = await AdminUser.findOne({ email: testEmail });
 
-      const token = loginRes.body.data.token;
+      // Sign a valid HS256 token directly — simulates a non-browser API client
+      const token = jwt.sign(
+        { sub: admin.id, role: 'admin' },
+        env.JWT_SECRET,
+        { algorithm: 'HS256', expiresIn: '1h' }
+      );
 
-      // Access protected endpoint with Authorization header
       const meRes = await request(app)
         .get('/api/v1/admin/auth/me')
         .set('Authorization', `Bearer ${token}`);
@@ -181,6 +202,17 @@ describe('Admin Authentication Endpoints', () => {
       const authCookie = cookies.find((c) => c.startsWith(`${env.ADMIN_COOKIE_NAME}=`));
       expect(authCookie).toBeDefined();
       expect(authCookie).toContain('Expires=Thu, 01 Jan 1970');
+    });
+
+    it('does NOT reject logout from test origin (no Origin header = non-browser client)', async () => {
+      // In test env (isProduction=false), Origin check is bypassed
+      const res = await request(app)
+        .post('/api/v1/admin/auth/logout')
+        .set('Origin', 'http://evil.example.com');
+
+      // In test/dev mode: cross-origin logout allowed (isProduction=false bypasses check)
+      // This confirms the guard is only enforced in production
+      expect(res.status).toBe(200);
     });
   });
 

@@ -77,7 +77,8 @@ router.post('/login', loginRateLimiter, async (req, res, next) => {
       success: true,
       data: {
         admin: admin.toJSON(),
-        token, // Included for non-browser/test clients
+        // Token is delivered only via HttpOnly cookie (not in response body)
+        // to eliminate XSS-accessible token exposure
       },
     });
   } catch (error) {
@@ -88,9 +89,28 @@ router.post('/login', loginRateLimiter, async (req, res, next) => {
 /**
  * @route   POST /api/v1/admin/auth/logout
  * @desc    Clear administrator session cookie
- * @access  Public
+ * @access  Public (Origin-validated to prevent logout CSRF)
  */
 router.post('/logout', (req, res) => {
+  // CSRF defense: validate Origin header when present.
+  // SameSite=Lax alone does not block cross-site POST in all scenarios.
+  const requestOrigin = req.headers.origin;
+  const allowedOrigins = [
+    env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ];
+
+  if (requestOrigin && !allowedOrigins.includes(requestOrigin) && env.isProduction) {
+    return res.status(403).json({
+      success: false,
+      error: {
+        message: 'Request origin not permitted.',
+        code: 'FORBIDDEN',
+      },
+    });
+  }
+
   res.clearCookie(env.ADMIN_COOKIE_NAME, {
     httpOnly: true,
     secure: env.isProduction,

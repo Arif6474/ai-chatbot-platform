@@ -13,6 +13,7 @@ function signAdminToken(admin) {
   };
 
   return jwt.sign(payload, env.JWT_SECRET, {
+    algorithm: 'HS256',
     expiresIn: env.JWT_EXPIRES_IN,
   });
 }
@@ -23,7 +24,8 @@ function signAdminToken(admin) {
  * @returns {Object} decoded payload
  */
 function verifyAdminToken(token) {
-  return jwt.verify(token, env.JWT_SECRET);
+  // Pin to HS256 — prevents algorithm confusion attacks (none, RS256 downgrade)
+  return jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] });
 }
 
 /**
