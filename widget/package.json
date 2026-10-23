@@ -2,5 +2,15 @@
   "name": "@ai-chatbot/widget",
   "version": "1.0.0",
   "private": true,
-  "description": "Reserved workspace for the embeddable client website chat widget (Step 8)"
+  "description": "Lightweight, embeddable client website chat widget",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "test": "jest --runInBand"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^6.0.7"
+  }
 }

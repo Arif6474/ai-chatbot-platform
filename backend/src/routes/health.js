@@ -8,6 +8,7 @@ const router = express.Router();
  * @desc    API health and operational readiness status
  * @access  Public
  */
+router.get('/', healthController.getHealth);
 router.get('/health', healthController.getHealth);
 
 module.exports = router;

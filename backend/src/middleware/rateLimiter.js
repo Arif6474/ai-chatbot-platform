@@ -19,6 +19,25 @@ const loginRateLimiter = rateLimit({
   skipSuccessfulRequests: false,
 });
 
+/**
+ * Public Chat Rate Limiter: Max 30 messages per 1 minute window per IP
+ */
+const publicChatRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: env.isTest ? 1000 : 30, // Lenient in test mode, strict in production/development
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      message: 'Too many chat messages from this IP. Please wait a moment before sending another message.',
+      code: 'RATE_LIMIT_EXCEEDED',
+    },
+  },
+  skipSuccessfulRequests: false,
+});
+
 module.exports = {
   loginRateLimiter,
+  publicChatRateLimiter,
 };
