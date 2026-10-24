@@ -4,7 +4,10 @@ const { connectDB, disconnectDB } = require('./config/database');
 
 async function startServer() {
   // Connect to database if URI is configured
-  await connectDB();
+  const connected = await connectDB();
+  if (env.isProduction && !connected) {
+    throw new Error('[SERVER FATAL] Failed to connect to MongoDB in production environment. Aborting startup.');
+  }
 
   const server = app.listen(env.PORT, () => {
     console.log(`[SERVER] AI Chatbot Platform Backend running in ${env.NODE_ENV} mode on port ${env.PORT}`);

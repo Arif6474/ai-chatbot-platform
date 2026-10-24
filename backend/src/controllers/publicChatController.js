@@ -4,6 +4,7 @@ const ChatSession = require('../models/ChatSession');
 const { retrieveKnowledge } = require('../services/knowledgeRetrievalService');
 const { buildGroundedPrompt } = require('../services/groundedPromptBuilder');
 const { OllamaModelAdapter } = require('../services/ollamaModelAdapter');
+const { recordUsageEvent } = require('../services/usageTrackingService');
 
 const MAX_MESSAGE_LENGTH = 500;
 const SESSION_TOKEN_REGEX = /^[0-9a-fA-F]{48}$/;
@@ -83,6 +84,7 @@ async function sendMessage(req, res, next) {
       session = await ChatSession.create({
         tenantId: tenant._id,
       });
+      await recordUsageEvent({ tenantId: tenant._id, eventType: 'newSession' });
     }
 
     // Retrieve published knowledge for this tenant
@@ -103,9 +105,12 @@ async function sendMessage(req, res, next) {
     try {
       modelResult = await adapter.generate({ systemPrompt, userPrompt });
     } catch (modelError) {
+      // Metric Counting: Fallback responses handled by the server following a ModelAdapterError.
+      // Only ModelAdapterError (offline, timeout, etc.) is counted as a fallbackResponse.
+      // Other unforeseen programming/system errors are re-thrown to the global error handler.
       if (modelError.name === 'ModelAdapterError') {
         const fallbackText = config.fallbackMessage || 'I am currently unable to process your request. Please try again later or contact support.';
-        // If model failed, we don't increment message count or leave session corrupted
+        await recordUsageEvent({ tenantId: tenant._id, eventType: 'fallbackResponse' });
         return res.status(200).json({
           success: true,
           data: {
@@ -118,14 +123,20 @@ async function sendMessage(req, res, next) {
       throw modelError;
     }
 
-    // Update session activity and message count atomically
-    await ChatSession.updateOne(
-      { _id: session._id },
-      {
-        $inc: { messageCount: 1 },
-        $set: { lastActivityAt: new Date() },
-      }
-    );
+    // Metric Counting: Successful model generations counted by the server.
+    // Execution Order: Counters are updated after successful model generation and before HTTP response dispatch.
+    // This reflects successful server-side generation, not confirmed receipt by the client.
+    // Session message count and daily usage counter are updated atomically.
+    await Promise.all([
+      ChatSession.updateOne(
+        { _id: session._id },
+        {
+          $inc: { messageCount: 1 },
+          $set: { lastActivityAt: new Date() },
+        }
+      ),
+      recordUsageEvent({ tenantId: tenant._id, eventType: 'successfulResponse' }),
+    ]);
 
     return res.status(200).json({
       success: true,

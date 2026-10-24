@@ -20,7 +20,10 @@ function errorHandler(err, req, res, next) {
   let statusCode = err.status || err.statusCode || 500;
   let errorCode = err.code || 'INTERNAL_ERROR';
 
-  if (err.name === 'ValidationError' || (statusCode === 400 && errorCode === 'INTERNAL_ERROR')) {
+  if (err.name === 'CastError') {
+    statusCode = 400;
+    errorCode = 'INVALID_ID';
+  } else if (err.name === 'ValidationError' || (statusCode === 400 && errorCode === 'INTERNAL_ERROR')) {
     statusCode = 400;
     errorCode = 'VALIDATION_ERROR';
   }

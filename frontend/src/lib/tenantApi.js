@@ -1,8 +1,9 @@
 /**
  * Tenant Management API Client
  */
+import { API_BASE_URL } from './apiConfig';
 
-const BASE_URL = '/api/v1/admin/tenants';
+const BASE_URL = `${API_BASE_URL}/api/v1/admin/tenants`;
 
 /**
  * Handle API response and error formatting

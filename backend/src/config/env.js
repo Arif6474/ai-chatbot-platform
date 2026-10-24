@@ -54,12 +54,16 @@ const env = {
   OLLAMA_OUTPUT_TOKENS: parseBoundedInteger(process.env.OLLAMA_OUTPUT_TOKENS, 300, 'OLLAMA_OUTPUT_TOKENS', 1, 1024),
   // Single source of truth for allowed browser origins.
   // Used by both CORS middleware and server-side CSRF origin validation.
-  // Add additional production domains here as the platform grows.
-  ALLOWED_ORIGINS: [
-    FRONTEND_URL,
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-  ],
+  ALLOWED_ORIGINS: (() => {
+    if (process.env.ALLOWED_ORIGINS) {
+      return process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+    }
+    const origins = [FRONTEND_URL];
+    if (!isProduction) {
+      origins.push('http://localhost:5173', 'http://127.0.0.1:5173');
+    }
+    return [...new Set(origins)];
+  })(),
   isProduction,
   isTest,
 };
@@ -67,7 +71,7 @@ const env = {
 // Validate critical parameters in production
 if (env.isProduction) {
   if (!process.env.MONGODB_URI) {
-    console.warn('[CONFIG WARN] MONGODB_URI is not defined in production environment.');
+    throw new Error('[CONFIG FATAL] MONGODB_URI must be defined in production environment.');
   }
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
     throw new Error('[CONFIG FATAL] JWT_SECRET must be defined and at least 32 characters long in production.');

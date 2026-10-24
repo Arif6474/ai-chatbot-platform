@@ -1,24 +1,29 @@
 const express = require('express');
-const { publicChatRateLimiter } = require('../middleware/rateLimiter');
+const { publicChatRateLimiter, publicLeadRateLimiter } = require('../middleware/rateLimiter');
 const publicChatController = require('../controllers/publicChatController');
+const publicLeadController = require('../controllers/publicLeadController');
 
 const router = express.Router();
-
-// Apply public rate limiter to abuse-protect chat completions
-router.use(publicChatRateLimiter);
 
 /**
  * @route   GET /api/v1/public/chat/:tenantSlug/config
  * @desc    Get public presentation configuration for a tenant's chatbot
  * @access  Public
  */
-router.get('/:tenantSlug/config', publicChatController.getPublicConfiguration);
+router.get('/:tenantSlug/config', publicChatRateLimiter, publicChatController.getPublicConfiguration);
 
 /**
  * @route   POST /api/v1/public/chat/:tenantSlug/message
  * @desc    Send a public user message to a business tenant's chatbot
  * @access  Public
  */
-router.post('/:tenantSlug/message', publicChatController.sendMessage);
+router.post('/:tenantSlug/message', publicChatRateLimiter, publicChatController.sendMessage);
+
+/**
+ * @route   POST /api/v1/public/chat/:tenantSlug/leads
+ * @desc    Submit a lead/enquiry through the chatbot widget
+ * @access  Public
+ */
+router.post('/:tenantSlug/leads', publicLeadRateLimiter, publicLeadController.submitLead);
 
 module.exports = router;

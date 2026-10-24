@@ -37,7 +37,26 @@ const publicChatRateLimiter = rateLimit({
   skipSuccessfulRequests: false,
 });
 
+/**
+ * Public Lead Rate Limiter: Max 10 lead submissions per 15 minutes window per IP
+ */
+const publicLeadRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.isTest ? 1000 : 10, // Lenient in test mode, strict in production/development
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: {
+      message: 'Too many lead submissions from this IP. Please wait before submitting another enquiry.',
+      code: 'RATE_LIMIT_EXCEEDED',
+    },
+  },
+  skipSuccessfulRequests: false,
+});
+
 module.exports = {
   loginRateLimiter,
   publicChatRateLimiter,
+  publicLeadRateLimiter,
 };

@@ -102,11 +102,13 @@ function logout(req, res) {
     }
   }
 
+  const cookieOptions = getAuthCookieOptions();
   res.clearCookie(env.ADMIN_COOKIE_NAME, {
-    httpOnly: true,
-    secure: env.isProduction,
-    sameSite: 'lax',
-    path: '/',
+    httpOnly: cookieOptions.httpOnly,
+    secure: cookieOptions.secure,
+    sameSite: cookieOptions.sameSite,
+    path: cookieOptions.path,
+    ...(cookieOptions.domain ? { domain: cookieOptions.domain } : {}),
   });
 
   return res.status(200).json({

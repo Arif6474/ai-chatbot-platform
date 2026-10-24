@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../lib/apiConfig';
 
 const AuthContext = createContext(null);
 
-const API_BASE = '/api/v1/admin/auth';
+const API_BASE = `${API_BASE_URL}/api/v1/admin/auth`;
 
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(null);

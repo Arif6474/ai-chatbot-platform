@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, LogOut, KeyRound, Clock, UserCheck, Building2, CheckCircle2, FileText, Bot } from 'lucide-react';
+import { ShieldCheck, LogOut, KeyRound, Clock, UserCheck, Building2, CheckCircle2, FileText, Bot, Inbox, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -7,6 +7,8 @@ import InfoCard from '@/components/InfoCard';
 import TenantManagement from '@/components/tenants/TenantManagement';
 import ContentManagement from '@/components/content/ContentManagement';
 import ChatbotConfiguration from '@/components/chatbot/ChatbotConfiguration';
+import LeadManagement from '@/components/leads/LeadManagement';
+import UsageDashboard from '@/components/usage/UsageDashboard';
 
 export default function AdminDashboard() {
   const { admin, logout } = useAuth();
@@ -45,7 +47,31 @@ export default function AdminDashboard() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 pt-4 border-t border-slate-700/50 mt-4">
+          <div className="flex items-center gap-2 pt-4 border-t border-slate-700/50 mt-4 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setActiveTab('usage')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                activeTab === 'usage'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Usage Analytics</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('leads')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                activeTab === 'leads'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Inbox className="w-4 h-4" />
+              <span>Customer Leads</span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('chatbot')}
@@ -99,7 +125,17 @@ export default function AdminDashboard() {
       </Card>
 
       {/* Tab Content */}
-      {activeTab === 'tenants' ? <TenantManagement /> : activeTab === 'content' ? <ContentManagement /> : activeTab === 'chatbot' ? <ChatbotConfiguration /> : (
+      {activeTab === 'usage' ? (
+        <UsageDashboard />
+      ) : activeTab === 'leads' ? (
+        <LeadManagement />
+      ) : activeTab === 'tenants' ? (
+        <TenantManagement />
+      ) : activeTab === 'content' ? (
+        <ContentManagement />
+      ) : activeTab === 'chatbot' ? (
+        <ChatbotConfiguration />
+      ) : (
         <Card className="bg-slate-800 border-slate-700 shadow-xl shadow-black/20">
           <CardContent className="p-6 sm:p-8 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

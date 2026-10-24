@@ -13,8 +13,12 @@
     "dev:backend": "npm --workspace=@ai-chatbot/backend run dev",
     "dev:frontend": "npm --workspace=@ai-chatbot/frontend run dev",
     "build:frontend": "npm --workspace=@ai-chatbot/frontend run build",
+    "build:widget": "npm --workspace=@ai-chatbot/widget run build",
+    "build": "npm run build:frontend && npm run build:widget",
     "start:backend": "npm --workspace=@ai-chatbot/backend run start",
     "test:backend": "npm --workspace=@ai-chatbot/backend run test",
+    "test:widget": "npm --workspace=@ai-chatbot/widget test",
+    "test:all": "npm run test:backend && npm run test:widget",
     "test": "npm --workspace=@ai-chatbot/backend run test",
     "create-admin": "npm --workspace=@ai-chatbot/backend run create-admin"
   }

@@ -59,11 +59,17 @@ async function listTenantContent(req, res, next) {
   try {
     const tenant = await findTenant(req.params.tenantId, res);
     if (!tenant) return;
+    const allowedParams = ['page', 'limit', 'search', 'status'];
+    const unsupportedParams = Object.keys(req.query).filter((k) => !allowedParams.includes(k));
+    if (unsupportedParams.length > 0) {
+      return sendError(res, 400, `Unsupported query parameter(s): ${unsupportedParams.join(', ')}`, 'INVALID_QUERY');
+    }
+
     const { page: rawPage = '1', limit: rawLimit = '10', search, status } = req.query;
     if (!/^\d+$/.test(String(rawPage)) || Number(rawPage) < 1) return sendError(res, 400, 'Query parameter "page" must be a positive integer', 'INVALID_QUERY');
     if (!/^\d+$/.test(String(rawLimit)) || Number(rawLimit) < 1 || Number(rawLimit) > 100) return sendError(res, 400, 'Query parameter "limit" must be an integer between 1 and 100', 'INVALID_QUERY');
     if (status !== undefined && !BusinessContent.CONTENT_STATUSES.includes(status)) return sendError(res, 400, `Invalid status filter. Allowed values: ${BusinessContent.CONTENT_STATUSES.join(', ')}`, 'INVALID_QUERY');
-    if (search !== undefined && typeof search !== 'string') return sendError(res, 400, 'Query parameter "search" must be a string', 'INVALID_QUERY');
+    if (search !== undefined && (typeof search !== 'string' || search.trim().length > 100)) return sendError(res, 400, 'Query parameter "search" must be a string of at most 100 characters', 'INVALID_QUERY');
 
     const page = Number(rawPage);
     const limit = Number(rawLimit);

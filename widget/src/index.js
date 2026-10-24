@@ -11,7 +11,15 @@ import widgetCss from './widget.css?inline';
     document.querySelector('script[src*="widget.js"]');
 
   const tenantSlug = currentScript?.getAttribute('data-tenant')?.trim();
-  const apiBaseUrl = currentScript?.getAttribute('data-api-base')?.trim() || '';
+  const explicitApiBase = currentScript?.getAttribute('data-api-base')?.trim();
+  let inferredApiBase = '';
+  try {
+    const src = currentScript?.getAttribute('src') || '';
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      inferredApiBase = new URL(src).origin;
+    }
+  } catch (_) {}
+  const apiBaseUrl = (explicitApiBase || inferredApiBase || '').replace(/\/+$/, '');
 
   if (!tenantSlug) {
     console.warn('[AI Chatbot Widget] Missing required data-tenant attribute. Widget initialization aborted.');

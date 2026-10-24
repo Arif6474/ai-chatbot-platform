@@ -1,4 +1,6 @@
-const BASE_URL = '/api/v1/admin/tenants';
+import { API_BASE_URL } from './apiConfig';
+
+const BASE_URL = `${API_BASE_URL}/api/v1/admin/tenants`;
 
 async function handleResponse(response) {
   const payload = await response.json().catch(() => null);

@@ -3,16 +3,33 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const fs = require('fs');
 const env = require('./config/env');
 const healthRoutes = require('./routes/health');
 const adminAuthRoutes = require('./routes/adminAuth');
 const adminTenantRoutes = require('./routes/adminTenants');
 const adminContentRoutes = require('./routes/adminContent');
 const adminChatbotConfigurationRoutes = require('./routes/adminChatbotConfigurations');
+const adminLeadRoutes = require('./routes/adminLeads');
+const adminAnalyticsRoutes = require('./routes/adminAnalytics');
+const adminTenantUsageRoutes = require('./routes/adminTenantUsage');
 const publicChatRoutes = require('./routes/publicChat');
+const publicLeadRoutes = require('./routes/publicLeads');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
+
+// Reverse-proxy header trust (safe when deployed behind Cloudflare, Nginx, AWS ALB, Render)
+if (process.env.TRUST_PROXY) {
+  const trustVal = process.env.TRUST_PROXY.trim();
+  if (trustVal === 'true') {
+    app.set('trust proxy', 1);
+  } else if (!isNaN(Number(trustVal))) {
+    app.set('trust proxy', Number(trustVal));
+  } else {
+    app.set('trust proxy', trustVal);
+  }
+}
 
 // Security headers
 app.use(helmet());
@@ -21,8 +38,8 @@ app.use(helmet());
  * CORS — two policies applied per-route (never globally):
  *
  * publicCors  — origin: '*', credentials: false
- *   Applied to: /health, /api/v1/health, /api/v1/public/chat/*, /widget.js
- *   Health is an unauthenticated monitoring endpoint; public chat is consumed
+ *   Applied to: /health, /api/v1/health, /api/v1/public/chat/*, /api/v1/public/leads/*, /widget.js
+ *   Health is an unauthenticated monitoring endpoint; public chat and leads are consumed
  *   by widgets embedded on arbitrary customer domains.  No cookies on any of
  *   these routes.
  *
@@ -76,14 +93,30 @@ app.use('/api/v1/admin/tenants/:tenantId/content', adminCors, adminContentRoutes
 // Admin Chatbot Configuration routes (tenant-scoped)
 app.use('/api/v1/admin/tenants/:tenantId/chatbot-configuration', adminCors, adminChatbotConfigurationRoutes);
 
+// Admin Lead Management routes (tenant-scoped)
+app.use('/api/v1/admin/tenants/:tenantId/leads', adminCors, adminLeadRoutes);
+
+// Admin Platform Analytics routes
+app.use('/api/v1/admin/analytics', adminCors, adminAnalyticsRoutes);
+
+// Admin Tenant Usage routes (tenant-scoped)
+app.use('/api/v1/admin/tenants/:tenantId/usage', adminCors, adminTenantUsageRoutes);
+
 // Public chat and session routes.
 // publicCors allows any origin (no credentials) so embedded widgets on
 // arbitrary customer domains can reach the public API without CORS rejection.
 app.use('/api/v1/public/chat', publicCors, publicChatRoutes);
 
+// Public lead submission routes (open to any customer website origin)
+app.use('/api/v1/public/leads', publicCors, publicLeadRoutes);
+
 // Serve embeddable widget bundle statically (open to any origin)
 app.get('/widget.js', publicCors, (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../../widget/dist/widget.js'));
+  const widgetPath = path.resolve(__dirname, '../../widget/dist/widget.js');
+  if (!fs.existsSync(widgetPath)) {
+    return res.status(404).type('text/javascript').send('// Widget bundle not built. Please run npm run build:widget');
+  }
+  res.sendFile(widgetPath);
 });
 
 // Catch-all 404 handler

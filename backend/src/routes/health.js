@@ -10,5 +10,6 @@ const router = express.Router();
  */
 router.get('/', healthController.getHealth);
 router.get('/health', healthController.getHealth);
+router.get('/ready', healthController.getReadiness);
 
 module.exports = router;

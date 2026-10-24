@@ -16,6 +16,24 @@ function getHealth(req, res) {
   });
 }
 
+/**
+ * Operational readiness check for load balancers / orchestrators (K8s, ECS, Render)
+ * GET /health/ready and GET /api/v1/health/ready
+ */
+function getReadiness(req, res) {
+  const dbStatus = getDatabaseStatus();
+  const isReady = dbStatus === 'connected';
+  const statusCode = isReady ? 200 : 503;
+
+  return res.status(statusCode).json({
+    status: isReady ? 'ready' : 'not_ready',
+    service: 'ai-chatbot-backend',
+    timestamp: new Date().toISOString(),
+    database: dbStatus,
+  });
+}
+
 module.exports = {
   getHealth,
+  getReadiness,
 };

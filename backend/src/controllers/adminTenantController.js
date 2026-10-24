@@ -26,6 +26,18 @@ function isValidObjectId(id) {
  */
 async function listTenants(req, res, next) {
   try {
+    const allowedQueryParams = ['page', 'limit', 'search', 'status'];
+    const unsupportedParams = Object.keys(req.query).filter((k) => !allowedQueryParams.includes(k));
+    if (unsupportedParams.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: `Unsupported query parameter(s): ${unsupportedParams.join(', ')}`,
+          code: 'INVALID_QUERY',
+        },
+      });
+    }
+
     const { page: rawPage = 1, limit: rawLimit = 10, search, status } = req.query;
 
     const page = parseInt(rawPage, 10);
@@ -46,6 +58,16 @@ async function listTenants(req, res, next) {
         success: false,
         error: {
           message: 'Query parameter "limit" must be an integer between 1 and 100',
+          code: 'INVALID_QUERY',
+        },
+      });
+    }
+
+    if (search !== undefined && (typeof search !== 'string' || search.trim().length > 100)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Query parameter "search" must be a string of at most 100 characters',
           code: 'INVALID_QUERY',
         },
       });
