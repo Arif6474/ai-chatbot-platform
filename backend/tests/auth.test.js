@@ -311,4 +311,38 @@ describe('Admin Authentication Endpoints', () => {
       expect(isMatchInvalid).toBe(false);
     });
   });
+
+  describe('Token and Cookie Security Configuration', () => {
+    const { getAuthCookieOptions } = require('../src/services/tokenService');
+
+    it('enforces secure: true and sameSite: "none" when COOKIE_SAME_SITE is none', () => {
+      const origSameSite = process.env.COOKIE_SAME_SITE;
+      process.env.COOKIE_SAME_SITE = 'none';
+
+      const options = getAuthCookieOptions();
+      expect(options.httpOnly).toBe(true);
+      expect(options.secure).toBe(true);
+      expect(options.sameSite).toBe('none');
+
+      if (origSameSite) {
+        process.env.COOKIE_SAME_SITE = origSameSite;
+      } else {
+        delete process.env.COOKIE_SAME_SITE;
+      }
+    });
+
+    it('sets cookie domain when COOKIE_DOMAIN is configured', () => {
+      const origDomain = process.env.COOKIE_DOMAIN;
+      process.env.COOKIE_DOMAIN = '.example.com';
+
+      const options = getAuthCookieOptions();
+      expect(options.domain).toBe('.example.com');
+
+      if (origDomain) {
+        process.env.COOKIE_DOMAIN = origDomain;
+      } else {
+        delete process.env.COOKIE_DOMAIN;
+      }
+    });
+  });
 });

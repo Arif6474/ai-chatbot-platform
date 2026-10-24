@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const env = require('./config/env');
 const healthRoutes = require('./routes/health');
+const healthController = require('./controllers/healthController');
 const adminAuthRoutes = require('./routes/adminAuth');
 const adminTenantRoutes = require('./routes/adminTenants');
 const adminContentRoutes = require('./routes/adminContent');
@@ -20,14 +21,17 @@ const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const app = express();
 
 // Reverse-proxy header trust (safe when deployed behind Cloudflare, Nginx, AWS ALB, Render)
-if (process.env.TRUST_PROXY) {
-  const trustVal = process.env.TRUST_PROXY.trim();
-  if (trustVal === 'true') {
+if (process.env.TRUST_PROXY !== undefined) {
+  const trustVal = process.env.TRUST_PROXY.trim().toLowerCase();
+  if (trustVal === 'false' || trustVal === '0') {
+    app.set('trust proxy', false);
+  } else if (trustVal === 'true' || trustVal === '1') {
     app.set('trust proxy', 1);
   } else if (!isNaN(Number(trustVal))) {
     app.set('trust proxy', Number(trustVal));
   } else {
-    app.set('trust proxy', trustVal);
+    // Subnet string or comma-separated list of subnets/IPs (e.g., 'loopback, 10.0.0.0/8')
+    app.set('trust proxy', process.env.TRUST_PROXY.trim());
   }
 }
 
@@ -75,11 +79,13 @@ app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
-// Health endpoints — public, no credentials needed.
+// Health and operational readiness endpoints — public, no credentials needed.
 // Mounted at exact paths so the prefix does not match /api/v1/admin/* or
 // /api/v1/public/* (which would incorrectly invoke the wrong CORS policy).
 app.use('/health', publicCors, healthRoutes);
 app.use('/api/v1/health', publicCors, healthRoutes);
+app.get('/ready', publicCors, healthController.getReadiness);
+app.get('/api/v1/ready', publicCors, healthController.getReadiness);
 
 // Admin Authentication routes
 app.use('/api/v1/admin/auth', adminCors, adminAuthRoutes);

@@ -1,5 +1,5 @@
 const env = require('../config/env');
-const { getDatabaseStatus } = require('../config/database');
+const database = require('../config/database');
 
 /**
  * Health and operational readiness status
@@ -12,7 +12,7 @@ function getHealth(req, res) {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
     environment: env.NODE_ENV,
-    database: getDatabaseStatus(),
+    database: database.getDatabaseStatus(),
   });
 }
 
@@ -21,7 +21,7 @@ function getHealth(req, res) {
  * GET /health/ready and GET /api/v1/health/ready
  */
 function getReadiness(req, res) {
-  const dbStatus = getDatabaseStatus();
+  const dbStatus = database.getDatabaseStatus();
   const isReady = dbStatus === 'connected';
   const statusCode = isReady ? 200 : 503;
 

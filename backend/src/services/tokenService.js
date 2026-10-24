@@ -33,11 +33,12 @@ function verifyAdminToken(token) {
  * @returns {Object}
  */
 function getAuthCookieOptions() {
-  const isSameSiteNone = process.env.COOKIE_SAME_SITE === 'none';
+  const sameSiteVal = (process.env.COOKIE_SAME_SITE || 'lax').toLowerCase();
+  const isSameSiteNone = sameSiteVal === 'none';
   const cookieOptions = {
     httpOnly: true,
     secure: env.isProduction || isSameSiteNone,
-    sameSite: isSameSiteNone ? 'none' : (process.env.COOKIE_SAME_SITE || 'lax'),
+    sameSite: isSameSiteNone ? 'none' : sameSiteVal,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/',
   };
