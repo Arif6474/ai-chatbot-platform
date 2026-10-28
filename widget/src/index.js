@@ -1,7 +1,7 @@
 import widgetCss from './widget.css?inline';
 
 (function initWidget() {
-  // Prevent duplicate execution
+  // Prevent duplicate execution via window sentinel
   if (window.__AI_CHATBOT_WIDGET_INITIALIZED__) return;
 
   // Read configuration from document.currentScript or script with data-tenant
@@ -28,33 +28,38 @@ import widgetCss from './widget.css?inline';
 
   window.__AI_CHATBOT_WIDGET_INITIALIZED__ = true;
 
-  // SVG Icons
+  // SVG Icons (compact single-path icons to keep bundle strictly under 35KB)
   const ICONS = {
-    bot: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M9 13v2"/><path d="M15 13v2"/></svg>',
-    close: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-    send: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
-    reset: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>',
-    chat: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>',
-    arrowRight: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
-    error: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    bot: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
+    botMini: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M9 13v2"/><path d="M15 13v2"/></svg>',
+    messageSquare: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    close: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    send: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+    trash: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    maximize: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>',
+    minimize: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M10 14l-7 7"/></svg>',
+    plus: '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    globe: '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+    sparkles: '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>',
+    spin: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
   };
 
   function hexToRgba(hex, alpha) {
-    let c = (hex || '#2563eb').replace('#', '');
+    let c = (hex || '#059669').replace('#', '');
     if (c.length === 3) c = c.split('').map((x) => x + x).join('');
     const num = parseInt(c, 16);
-    if (isNaN(num)) return `rgba(37, 99, 235, ${alpha})`;
+    if (isNaN(num)) return `rgba(5, 150, 105, ${alpha})`;
     const r = (num >> 16) & 255;
     const g = (num >> 8) & 255;
     const b = num & 255;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
-  function darkenHex(hex, amount = 30) {
-    let c = (hex || '#2563eb').replace('#', '');
+  function darkenHex(hex, amount = 35) {
+    let c = (hex || '#059669').replace('#', '');
     if (c.length === 3) c = c.split('').map((x) => x + x).join('');
     const num = parseInt(c, 16);
-    if (isNaN(num)) return hex || '#1e40af';
+    if (isNaN(num)) return hex || '#064e3b';
     const r = Math.max(0, ((num >> 16) & 255) - amount);
     const g = Math.max(0, ((num >> 8) & 255) - amount);
     const b = Math.max(0, (num & 255) - amount);
@@ -72,6 +77,7 @@ import widgetCss from './widget.css?inline';
   // Widget state
   const state = {
     isOpen: false,
+    isExpanded: false,
     config: null,
     messages: [],
     sessionToken: null,
@@ -95,7 +101,7 @@ import widgetCss from './widget.css?inline';
 
   // Root wrapper inside shadow DOM
   const root = document.createElement('div');
-  root.className = 'ai-widget-root text-slate-800 text-sm font-sans';
+  root.className = 'ai-widget-root text-stone-200 text-xs font-sans';
   shadow.appendChild(root);
 
   // Helper for safe text node creation (Strict XSS Prevention)
@@ -214,7 +220,7 @@ import widgetCss from './widget.css?inline';
     }
   }
 
-  // Main Render function building the UI with accessible elements
+  // Main Render function matching the reference ChatbotWidget design
   function render() {
     if (!state.config || !state.config.enabled) {
       root.replaceChildren();
@@ -223,143 +229,171 @@ import widgetCss from './widget.css?inline';
 
     const { displayName, primaryColor, position } = state.config;
     const isLeft = position === 'bottom-left';
-    const darkColor = darkenHex(primaryColor, 35);
-    const shadowRgba = hexToRgba(primaryColor, 0.38);
+    const darkAccent = darkenHex(primaryColor, 35);
+    const shadowRgba = hexToRgba(primaryColor, 0.35);
 
     const positionClasses = isLeft
-      ? 'fixed bottom-5 left-5 z-[999999]'
-      : 'fixed bottom-5 right-5 z-[999999]';
+      ? 'fixed bottom-6 left-6 z-[999999] flex flex-col items-start'
+      : 'fixed bottom-6 right-6 z-[999999] flex flex-col items-end';
 
-    root.className = `ai-widget-root text-slate-800 text-sm font-sans ${positionClasses}`;
+    root.className = `ai-widget-root text-stone-200 text-xs font-sans ${positionClasses}`;
     root.replaceChildren();
 
-    // Chat Panel (shown if isOpen is true)
+    // 1. Expanded Chat Window (Obsidian / Stone-900 Luxe Theme)
     if (state.isOpen) {
       const panel = document.createElement('div');
       panel.setAttribute('role', 'dialog');
-      panel.setAttribute('aria-label', `${displayName} Chat`);
-      panel.className = `w-[370px] sm:w-[390px] max-w-[calc(100vw-2.5rem)] h-[580px] max-h-[calc(100vh-6.5rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 mb-3.5 transition-all duration-200 ease-out origin-bottom widget-enter ${
-        isLeft ? 'origin-bottom-left' : 'origin-bottom-right'
-      }`;
-      panel.style.boxShadow = `0 20px 40px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06), 0 8px 16px -6px rgba(0, 0, 0, 0.08)`;
+      panel.setAttribute('aria-label', `${displayName} AI Chat`);
 
-      // 1. Premium Header with gradient and action controls
+      // Expandable window sizing matching reference
+      const sizeClasses = state.isExpanded
+        ? 'w-[92vw] sm:w-[600px] h-[80vh] max-h-[750px]'
+        : 'w-[92vw] sm:w-[400px] h-[550px] max-h-[85vh]';
+
+      panel.className = `bg-stone-900 border border-stone-800 shadow-2xl rounded-3xl flex flex-col overflow-hidden mb-4 transition-all duration-300 ease-out origin-bottom widget-enter ${sizeClasses}`;
+      panel.style.boxShadow = `0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 35px -5px ${shadowRgba}`;
+
+      // --- Header (bg-stone-950/80 px-4 sm:px-5 py-3 border-b border-stone-800) ---
       const header = document.createElement('header');
-      header.className = 'px-4 py-3.5 flex items-center justify-between text-white select-none relative overflow-hidden shrink-0 shadow-sm';
-      header.style.background = `linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%)`;
+      header.className = 'bg-stone-950/90 px-4 sm:px-5 py-3 border-b border-stone-800 flex flex-col shrink-0 select-none';
 
-      // Header subtle gloss sheen
-      const gloss = document.createElement('div');
-      gloss.className = 'absolute inset-0 pointer-events-none opacity-20';
-      gloss.style.background = 'radial-gradient(circle at 10% 20%, rgba(255,255,255,0.8) 0%, transparent 60%)';
-      header.appendChild(gloss);
+      // Header Row 1: Brand + Icon Controls
+      const headerRow1 = document.createElement('div');
+      headerRow1.className = 'flex items-center justify-between';
 
-      // Header left title group
-      const headerTitleGroup = document.createElement('div');
-      headerTitleGroup.className = 'flex items-center gap-2.5 relative z-10';
+      // Brand left
+      const brandWrapper = document.createElement('div');
+      brandWrapper.className = 'flex items-center gap-2.5';
 
-      // Avatar container with live status
-      const avatarWrapper = document.createElement('div');
-      avatarWrapper.className = 'relative flex items-center justify-center';
+      const avatarBox = document.createElement('div');
+      avatarBox.className = 'relative shrink-0';
 
-      const avatar = document.createElement('div');
-      avatar.className = 'w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs text-white shadow-sm';
-      avatar.innerHTML = ICONS.bot;
+      const avatarIcon = document.createElement('div');
+      avatarIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md';
+      avatarIcon.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkAccent})`;
+      avatarIcon.innerHTML = ICONS.bot;
 
-      // Live green presence dot
-      const liveDot = document.createElement('span');
-      liveDot.className = 'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white';
+      const presenceDot = document.createElement('span');
+      presenceDot.className = 'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-stone-950';
+      presenceDot.style.backgroundColor = primaryColor || '#10b981';
 
-      avatarWrapper.appendChild(avatar);
-      avatarWrapper.appendChild(liveDot);
+      avatarBox.appendChild(avatarIcon);
+      avatarBox.appendChild(presenceDot);
 
-      const titleContainer = document.createElement('div');
-      titleContainer.className = 'flex flex-col';
+      const brandTitleGroup = document.createElement('div');
+      brandTitleGroup.className = 'flex items-center gap-1.5';
 
-      const title = createTextElement('h2', displayName || 'AI Assistant', 'font-semibold text-sm leading-tight text-white tracking-tight');
-      const statusIndicator = document.createElement('div');
-      statusIndicator.className = 'flex items-center gap-1.5 text-[11px] text-white/80 font-normal mt-0.5';
-      statusIndicator.innerHTML = '<span>Typically replies instantly</span>';
+      const title = createTextElement('h3', displayName || 'AI Assistant', 'text-sm font-black text-white tracking-tight whitespace-nowrap');
+      const aiBadge = document.createElement('span');
+      aiBadge.className = 'border text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0';
+      aiBadge.style.color = primaryColor;
+      aiBadge.style.borderColor = hexToRgba(primaryColor, 0.3);
+      aiBadge.style.backgroundColor = hexToRgba(primaryColor, 0.12);
+      aiBadge.textContent = 'AI';
 
-      titleContainer.appendChild(title);
-      titleContainer.appendChild(statusIndicator);
-      headerTitleGroup.appendChild(avatarWrapper);
-      headerTitleGroup.appendChild(titleContainer);
+      brandTitleGroup.appendChild(title);
+      brandTitleGroup.appendChild(aiBadge);
+      brandWrapper.appendChild(avatarBox);
+      brandWrapper.appendChild(brandTitleGroup);
 
-      // Header right action controls (Reset + Close)
-      const headerActions = document.createElement('div');
-      headerActions.className = 'flex items-center gap-1 relative z-10';
+      // Icon controls right (Reset, Expand, Close)
+      const controls = document.createElement('div');
+      controls.className = 'flex items-center gap-0.5 text-stone-400';
 
-      // Refresh / Restart button
+      // Reset / Clear
       const resetBtn = document.createElement('button');
       resetBtn.type = 'button';
+      resetBtn.title = 'Reset conversation';
       resetBtn.setAttribute('aria-label', 'Reset conversation');
-      resetBtn.title = 'New conversation';
-      resetBtn.className = 'p-1.5 rounded-lg hover:bg-white/15 text-white/80 hover:text-white transition-colors cursor-pointer focus:outline-none';
-      resetBtn.innerHTML = ICONS.reset;
+      resetBtn.className = 'p-1.5 hover:text-white hover:bg-stone-800 rounded-lg transition-colors cursor-pointer';
+      resetBtn.innerHTML = ICONS.trash;
       resetBtn.addEventListener('click', resetConversation);
 
-      // Minimize / Close button
+      // Expand / Minimize toggle
+      const expandBtn = document.createElement('button');
+      expandBtn.type = 'button';
+      expandBtn.title = state.isExpanded ? 'Standard view' : 'Expand window';
+      expandBtn.setAttribute('aria-label', state.isExpanded ? 'Standard view' : 'Expand window');
+      expandBtn.className = 'hidden sm:block p-1.5 hover:text-white hover:bg-stone-800 rounded-lg transition-colors cursor-pointer';
+      expandBtn.innerHTML = state.isExpanded ? ICONS.minimize : ICONS.maximize;
+      expandBtn.addEventListener('click', () => {
+        state.isExpanded = !state.isExpanded;
+        render();
+      });
+
+      // Close button
       const closeBtn = document.createElement('button');
       closeBtn.type = 'button';
-      closeBtn.setAttribute('aria-label', 'Close chat window');
-      closeBtn.className = 'p-1.5 rounded-lg hover:bg-white/15 text-white/90 hover:text-white transition-colors cursor-pointer focus:outline-none';
+      closeBtn.title = 'Close chat';
+      closeBtn.setAttribute('aria-label', 'Close chat');
+      closeBtn.className = 'p-1.5 hover:text-white hover:bg-stone-800 rounded-lg transition-colors cursor-pointer';
       closeBtn.innerHTML = ICONS.close;
       closeBtn.addEventListener('click', toggleOpen);
 
-      headerActions.appendChild(resetBtn);
-      headerActions.appendChild(closeBtn);
+      controls.appendChild(resetBtn);
+      controls.appendChild(expandBtn);
+      controls.appendChild(closeBtn);
 
-      header.appendChild(headerTitleGroup);
-      header.appendChild(headerActions);
+      headerRow1.appendChild(brandWrapper);
+      headerRow1.appendChild(controls);
+
+      // Header Row 2: Model status + New Chat
+      const headerRow2 = document.createElement('div');
+      headerRow2.className = 'flex items-center justify-between mt-2 pt-1 border-t border-stone-800/60';
+
+      const modelInfo = document.createElement('div');
+      modelInfo.className = 'flex items-center gap-2 text-[10px] text-stone-400';
+      modelInfo.innerHTML = `
+        <span class="flex items-center gap-1">${ICONS.globe} Multilingual</span>
+        <span class="text-stone-700">•</span>
+        <span class="font-medium" style="color: ${primaryColor}">Online Assistant</span>
+      `;
+
+      const newChatBtn = document.createElement('button');
+      newChatBtn.type = 'button';
+      newChatBtn.title = 'Start fresh consultation';
+      newChatBtn.className = 'flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold border rounded-lg transition-colors cursor-pointer';
+      newChatBtn.style.color = primaryColor;
+      newChatBtn.style.borderColor = hexToRgba(primaryColor, 0.35);
+      newChatBtn.style.backgroundColor = hexToRgba(primaryColor, 0.1);
+      newChatBtn.innerHTML = `${ICONS.plus}<span>New Chat</span>`;
+      newChatBtn.addEventListener('click', resetConversation);
+
+      headerRow2.appendChild(modelInfo);
+      headerRow2.appendChild(newChatBtn);
+
+      header.appendChild(headerRow1);
+      header.appendChild(headerRow2);
       panel.appendChild(header);
 
-      // 2. Messages Canvas
+      // --- Messages Canvas (bg-[#161514] space-y-4 text-xs font-medium) ---
       const messageList = document.createElement('div');
-      messageList.className = 'ai-widget-messages flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50';
-
-      // Date pill divider
-      const dateDivider = document.createElement('div');
-      dateDivider.className = 'flex justify-center select-none my-1';
-      dateDivider.innerHTML = '<span class="text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded-full px-2.5 py-0.5 shadow-sm">Today</span>';
-      messageList.appendChild(dateDivider);
+      messageList.className = 'ai-widget-messages flex-1 p-4 overflow-y-auto space-y-4 text-xs font-medium bg-[#161514]';
 
       state.messages.forEach((msg) => {
         const isUser = msg.role === 'user';
-        const msgRow = document.createElement('div');
-        msgRow.className = `flex gap-2 widget-msg ${isUser ? 'justify-end' : 'justify-start'}`;
-
-        // Assistant avatar for assistant rows
-        if (!isUser) {
-          const botAvatar = document.createElement('div');
-          botAvatar.className = 'w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm mt-0.5';
-          botAvatar.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkColor})`;
-          botAvatar.innerHTML = ICONS.bot;
-          msgRow.appendChild(botAvatar);
-        }
-
-        const bubbleCol = document.createElement('div');
-        bubbleCol.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[82%]`;
+        const msgWrapper = document.createElement('div');
+        msgWrapper.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'} widget-msg`;
 
         const bubble = document.createElement('div');
         if (isUser) {
-          bubble.className = 'px-3.5 py-2.5 rounded-2xl rounded-tr-xs text-[13px] leading-relaxed break-words whitespace-pre-wrap text-white shadow-sm';
-          bubble.style.background = `linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%)`;
+          bubble.className = 'max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed text-white shadow-md break-words whitespace-pre-wrap';
+          bubble.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkAccent})`;
         } else {
-          bubble.className = 'px-3.5 py-2.5 rounded-2xl rounded-tl-xs text-[13px] leading-relaxed break-words whitespace-pre-wrap text-slate-800 bg-white border border-slate-200 shadow-sm';
+          bubble.className = 'max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed bg-stone-900 border border-stone-800 text-stone-200 shadow-sm break-words whitespace-pre-wrap';
         }
 
-        // Strictly safe text content assignment (Strict XSS Prevention)
+        // Strictly safe text assignment (Strict XSS Prevention)
         bubble.textContent = msg.text;
-        bubbleCol.appendChild(bubble);
+        msgWrapper.appendChild(bubble);
 
-        // Subtext row with time and optional automated badge
+        // Subtext / Timestamp row
         const metaRow = document.createElement('div');
-        metaRow.className = `flex items-center gap-1.5 mt-1 px-1 text-[10px] ${isUser ? 'text-slate-400 justify-end' : 'text-slate-400 justify-start'}`;
+        metaRow.className = `flex items-center gap-1.5 mt-1 px-1 text-[9px] text-stone-600 ${isUser ? 'justify-end' : 'justify-start'}`;
 
         if (msg.fallbackApplied) {
           const badge = document.createElement('span');
-          badge.className = 'inline-flex items-center text-[9.5px] font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5';
+          badge.className = 'text-[9px] text-stone-500 bg-stone-900 border border-stone-800 rounded px-1.5 py-0.5';
           badge.textContent = 'Automated fallback';
           metaRow.appendChild(badge);
         }
@@ -370,75 +404,77 @@ import widgetCss from './widget.css?inline';
           metaRow.appendChild(timeSpan);
         }
 
-        bubbleCol.appendChild(metaRow);
-        msgRow.appendChild(bubbleCol);
-        messageList.appendChild(msgRow);
+        msgWrapper.appendChild(metaRow);
+        messageList.appendChild(msgWrapper);
       });
 
-      // Quick Starter Prompts (shown when only welcome message is present)
-      if (state.messages.length <= 1 && !state.isLoading) {
-        const promptGroup = document.createElement('div');
-        promptGroup.className = 'pt-2 space-y-1.5';
-
-        const promptTitle = document.createElement('div');
-        promptTitle.className = 'text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-1';
-        promptTitle.textContent = 'Suggested Questions';
-        promptGroup.appendChild(promptTitle);
-
-        const suggestions = [
-          'What services do you offer?',
-          'What are your business hours?',
-          'How can I get in touch with you?',
-        ];
-
-        suggestions.forEach((text) => {
-          const chip = document.createElement('button');
-          chip.type = 'button';
-          chip.className = 'w-full text-left px-3 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-medium transition-all shadow-sm cursor-pointer flex items-center justify-between';
-          
-          const chipText = createTextElement('span', text, 'flex-1 overflow-hidden');
-          const chipArrow = document.createElement('span');
-          chipArrow.className = 'text-slate-300 ml-1.5 shrink-0';
-          chipArrow.innerHTML = ICONS.arrowRight;
-
-          chip.appendChild(chipText);
-          chip.appendChild(chipArrow);
-          chip.addEventListener('click', () => sendMessage(text));
-          promptGroup.appendChild(chip);
-        });
-
-        messageList.appendChild(promptGroup);
-      }
-
-      // Loading state indicator with bot avatar
+      // Loading Typing Indicator matching reference (Sparkles + bouncing dots)
       if (state.isLoading) {
         const loadingRow = document.createElement('div');
-        loadingRow.className = 'flex gap-2 items-center widget-msg';
+        loadingRow.className = 'flex items-start gap-2 widget-msg';
 
-        const botAvatar = document.createElement('div');
-        botAvatar.className = 'w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm';
-        botAvatar.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkColor})`;
-        botAvatar.innerHTML = ICONS.bot;
+        const sparkIcon = document.createElement('div');
+        sparkIcon.className = 'w-7 h-7 rounded-lg border flex items-center justify-center shrink-0';
+        sparkIcon.style.backgroundColor = hexToRgba(primaryColor, 0.15);
+        sparkIcon.style.borderColor = hexToRgba(primaryColor, 0.3);
+        sparkIcon.style.color = primaryColor;
+        sparkIcon.innerHTML = `<span class="animate-spin">${ICONS.sparkles}</span>`;
 
         const loadingBubble = document.createElement('div');
-        loadingBubble.className = 'flex items-center gap-1.5 text-xs text-slate-500 px-3.5 py-2.5 bg-white rounded-2xl rounded-tl-xs border border-slate-200 shadow-sm';
+        loadingBubble.className = 'bg-stone-900 border border-stone-800 rounded-2xl px-4 py-3 text-stone-400 text-xs flex items-center gap-2';
         loadingBubble.innerHTML = `
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-400 widget-dot-1"></span>
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-400 widget-dot-2"></span>
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-400 widget-dot-3"></span>
-          <span class="ml-1 text-[11px] font-medium text-slate-400">Thinking...</span>
+          <span>Thinking</span>
+          <span class="inline-flex gap-1 items-center">
+            <span class="w-1.5 h-1.5 rounded-full widget-dot-1" style="background-color: ${primaryColor}"></span>
+            <span class="w-1.5 h-1.5 rounded-full widget-dot-2" style="background-color: ${primaryColor}"></span>
+            <span class="w-1.5 h-1.5 rounded-full widget-dot-3" style="background-color: ${primaryColor}"></span>
+          </span>
         `;
 
-        loadingRow.appendChild(botAvatar);
+        loadingRow.appendChild(sparkIcon);
         loadingRow.appendChild(loadingBubble);
         messageList.appendChild(loadingRow);
+      }
+
+      // Quick Suggestions Bar (when conversation has only welcome message)
+      if (state.messages.length <= 1 && !state.isLoading) {
+        const quickReplies = [
+          'What services do you offer?',
+          'What are your business hours?',
+          'How can I get in touch?',
+        ];
+
+        const quickBar = document.createElement('div');
+        quickBar.className = 'pt-2 flex flex-col gap-1.5';
+
+        const barTitle = document.createElement('div');
+        barTitle.className = 'text-[10px] font-bold uppercase tracking-wider text-stone-500 px-1';
+        barTitle.textContent = 'Quick Questions';
+        quickBar.appendChild(barTitle);
+
+        quickReplies.forEach((reply) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'w-full text-left bg-stone-900/90 hover:bg-stone-800 border border-stone-800/90 text-stone-300 text-xs font-medium px-3.5 py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-between shadow-sm';
+          
+          const textSpan = createTextElement('span', reply);
+          const iconSpan = document.createElement('span');
+          iconSpan.innerHTML = ICONS.plus;
+          iconSpan.style.color = primaryColor;
+
+          btn.appendChild(textSpan);
+          btn.appendChild(iconSpan);
+          btn.addEventListener('click', () => sendMessage(reply));
+          quickBar.appendChild(btn);
+        });
+
+        messageList.appendChild(quickBar);
       }
 
       // Error banner
       if (state.error) {
         const errorBanner = document.createElement('div');
-        errorBanner.className = 'p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2 shadow-sm';
-        errorBanner.innerHTML = ICONS.error;
+        errorBanner.className = 'p-3 rounded-2xl bg-red-950/40 border border-red-800/50 text-red-200 text-xs flex items-center gap-2';
         const errorText = createTextElement('span', state.error, 'flex-1 font-medium');
         errorBanner.appendChild(errorText);
         messageList.appendChild(errorBanner);
@@ -446,12 +482,9 @@ import widgetCss from './widget.css?inline';
 
       panel.appendChild(messageList);
 
-      // 3. Footer Input Area with Card Enclosure and Branding
-      const footer = document.createElement('footer');
-      footer.className = 'p-3 bg-white border-t border-slate-100 shrink-0';
-
+      // --- Input Bar (p-3 bg-stone-950 border-t border-stone-800 flex items-end gap-2) ---
       const form = document.createElement('form');
-      form.className = 'flex flex-col gap-1.5';
+      form.className = 'p-3 bg-stone-950 border-t border-stone-800 flex items-end gap-2 shrink-0';
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const textarea = form.querySelector('textarea');
@@ -462,21 +495,21 @@ import widgetCss from './widget.css?inline';
         }
       });
 
-      // Capsule input card
-      const inputCard = document.createElement('div');
-      inputCard.className = 'flex items-end gap-1.5 bg-slate-100 hover:bg-slate-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-300 border border-slate-200 rounded-2xl p-1.5 transition-all shadow-sm';
+      const inputWrapper = document.createElement('div');
+      inputWrapper.className = 'flex-1 bg-stone-900/90 rounded-2xl border border-stone-800 transition-all flex items-center px-3.5 py-1.5 focus-within:ring-2';
+      inputWrapper.style.setProperty('--tw-ring-color', hexToRgba(primaryColor, 0.25));
 
       const textarea = document.createElement('textarea');
       textarea.rows = 1;
-      textarea.placeholder = 'Type your message...';
+      textarea.placeholder = 'Ask in any language...';
       textarea.maxLength = 500;
       textarea.setAttribute('aria-label', 'Chat message');
-      textarea.className = 'flex-1 bg-transparent border-0 outline-none text-slate-800 text-[13px] placeholder:text-slate-400 resize-none max-h-24 px-2 py-1 leading-normal';
+      textarea.className = 'w-full bg-transparent text-xs text-white placeholder:text-stone-500 outline-none resize-none leading-relaxed py-1.5 max-h-28';
 
       // Auto-expand textarea
       textarea.addEventListener('input', () => {
         textarea.style.height = 'auto';
-        textarea.style.height = `${Math.min(textarea.scrollHeight, 96)}px`;
+        textarea.style.height = `${Math.min(textarea.scrollHeight, 112)}px`;
       });
 
       // Enter to send (Shift+Enter for newline)
@@ -491,63 +524,57 @@ import widgetCss from './widget.css?inline';
       sendBtn.type = 'submit';
       sendBtn.setAttribute('aria-label', 'Send message');
       sendBtn.disabled = state.isLoading;
-      sendBtn.className = 'w-8 h-8 rounded-xl text-white shadow-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-40 flex items-center justify-center cursor-pointer shrink-0';
-      sendBtn.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkColor})`;
-      sendBtn.innerHTML = ICONS.send;
+      sendBtn.className = 'w-10 h-10 rounded-2xl text-white flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shrink-0 cursor-pointer';
+      sendBtn.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkAccent})`;
+      sendBtn.style.boxShadow = `0 10px 20px -5px ${shadowRgba}`;
+      sendBtn.innerHTML = state.isLoading ? ICONS.spin : ICONS.send;
 
-      inputCard.appendChild(textarea);
-      inputCard.appendChild(sendBtn);
-      form.appendChild(inputCard);
-
-      // Subtle branding note
-      const brandBadge = document.createElement('div');
-      brandBadge.className = 'flex items-center justify-center gap-1 text-[10px] text-slate-400 font-medium select-none pt-0.5';
-      brandBadge.innerHTML = '<span>⚡ Powered by AI</span>';
-      form.appendChild(brandBadge);
-
-      footer.appendChild(form);
-      panel.appendChild(footer);
+      inputWrapper.appendChild(textarea);
+      form.appendChild(inputWrapper);
+      form.appendChild(sendBtn);
+      panel.appendChild(form);
 
       root.appendChild(panel);
     }
 
-    // 4. Floating Action Launcher Button
-    const launcherWrapper = document.createElement('div');
-    launcherWrapper.className = `flex items-center ${isLeft ? 'justify-start' : 'justify-end'} gap-2.5`;
+    // 2. Floating Chat Trigger Button matching reference
+    const triggerBtn = document.createElement('button');
+    triggerBtn.type = 'button';
+    triggerBtn.setAttribute('aria-label', state.isOpen ? 'Close AI Concierge' : 'Open AI Concierge');
+    triggerBtn.setAttribute('aria-expanded', state.isOpen ? 'true' : 'false');
+    triggerBtn.className = 'group relative flex items-center gap-2.5 px-4 py-3.5 bg-stone-950 border text-white rounded-full shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xl';
+    triggerBtn.style.borderColor = hexToRgba(primaryColor, 0.35);
+    triggerBtn.style.boxShadow = `0 20px 35px -10px rgba(0, 0, 0, 0.7), 0 0 20px -3px ${shadowRgba}`;
 
-    // Tooltip prompt when closed
-    if (!state.isOpen) {
-      const tooltip = document.createElement('div');
-      tooltip.className = 'hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 text-xs font-medium rounded-full shadow-lg border border-slate-200 cursor-pointer select-none transition-transform hover:scale-105';
-      tooltip.innerHTML = `
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>Chat with us 👋</span>
-      `;
-      tooltip.addEventListener('click', toggleOpen);
-      launcherWrapper.appendChild(tooltip);
-    }
+    const iconBox = document.createElement('div');
+    iconBox.className = 'relative shrink-0';
 
-    const launcherBtn = document.createElement('button');
-    launcherBtn.type = 'button';
-    launcherBtn.setAttribute('aria-label', state.isOpen ? 'Close chat' : 'Open chat');
-    launcherBtn.setAttribute('aria-expanded', state.isOpen ? 'true' : 'false');
-    launcherBtn.className =
-      'w-14 h-14 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-offset-2 shrink-0 shadow-lg';
-    launcherBtn.style.color = '#ffffff';
+    const circleBadge = document.createElement('div');
+    circleBadge.className = 'w-8 h-8 rounded-full flex items-center justify-center text-white shadow-inner group-hover:rotate-12 transition-transform';
+    circleBadge.style.background = `linear-gradient(135deg, ${primaryColor}, ${darkAccent})`;
+    circleBadge.innerHTML = state.isOpen ? ICONS.close : ICONS.messageSquare;
+    iconBox.appendChild(circleBadge);
 
-    if (state.isOpen) {
-      launcherBtn.style.backgroundColor = '#1e293b';
-      launcherBtn.style.boxShadow = '0 10px 25px -4px rgba(15, 23, 42, 0.35)';
-      launcherBtn.innerHTML = ICONS.close;
-    } else {
-      launcherBtn.style.background = `linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%)`;
-      launcherBtn.style.boxShadow = `0 10px 25px -4px ${shadowRgba}, 0 4px 10px -2px rgba(0,0,0,0.1)`;
-      launcherBtn.innerHTML = ICONS.chat;
-    }
+    const labelContainer = document.createElement('div');
+    labelContainer.className = 'text-left hidden sm:block pr-1 select-none';
 
-    launcherBtn.addEventListener('click', toggleOpen);
-    launcherWrapper.appendChild(launcherBtn);
-    root.appendChild(launcherWrapper);
+    const brandText = createTextElement('p', displayName || 'AI Assistant', 'text-[11px] font-black tracking-wider uppercase');
+    brandText.style.color = primaryColor;
+
+    const subText = createTextElement(
+      'p',
+      state.isOpen ? 'Click to minimize' : 'Ask in any language',
+      'text-[9px] font-semibold text-stone-400'
+    );
+
+    labelContainer.appendChild(brandText);
+    labelContainer.appendChild(subText);
+
+    triggerBtn.appendChild(iconBox);
+    triggerBtn.appendChild(labelContainer);
+    triggerBtn.addEventListener('click', toggleOpen);
+
+    root.appendChild(triggerBtn);
   }
 
   // Kick off configuration loading
