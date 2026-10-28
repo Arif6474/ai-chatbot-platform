@@ -22,7 +22,7 @@ function validateTenantId(tenantId) {
 }
 
 function tokenize(value) {
-  return [...new Set((value.toLowerCase().match(/[a-z0-9]{2,}/g) || []))];
+  return [...new Set((value.toLowerCase().match(/[\p{L}\p{N}]{2,}/gu) || []))];
 }
 
 function scoreContent(content, terms) {
@@ -45,19 +45,26 @@ async function retrieveKnowledge({ tenantId, question }) {
   if (!tenantExists) throw new KnowledgeRetrievalError('Tenant not found', 'TENANT_NOT_FOUND');
 
   const terms = tokenize(question.trim());
-  if (!terms.length) return [];
   const candidates = await BusinessContent.find({ tenantId, status: 'published' })
     .select({ title: 1, body: 1, createdAt: 1 })
     .sort({ createdAt: -1, _id: -1 })
     .limit(MAX_CANDIDATES)
     .lean();
 
-  const ranked = candidates
+  if (!candidates.length) return [];
+
+  let ranked = candidates
     .map((content) => ({ content, score: scoreContent(content, terms) }))
     .filter(({ score }) => score > 0)
     .sort((left, right) => right.score - left.score
       || (new Date(right.content.createdAt || 0).getTime()) - (new Date(left.content.createdAt || 0).getTime())
       || String(right.content._id).localeCompare(String(left.content._id)));
+
+  // If no specific terms matched (e.g. cross-language query like Bengali "service ki ki ache amk banglai bol"),
+  // provide the tenant's published content so the multilingual model can answer using business facts
+  if (!ranked.length && candidates.length > 0) {
+    ranked = candidates.slice(0, MAX_DOCUMENTS).map((content) => ({ content, score: 1 }));
+  }
 
   let remaining = MAX_CONTEXT_CHARACTERS;
   const results = [];
