@@ -73,7 +73,14 @@ export default function ChatbotConfiguration() {
     const validationError = validate();
     if (validationError) return setError(validationError);
     const targetTenantId = tenantId;
-    const payload = { ...form, displayName: form.displayName.trim(), welcomeMessage: form.welcomeMessage.trim(), primaryColor: form.primaryColor.trim(), fallbackMessage: form.fallbackMessage.trim() || null };
+    const payload = {
+      displayName: form.displayName.trim(),
+      welcomeMessage: form.welcomeMessage.trim(),
+      primaryColor: form.primaryColor.trim(),
+      position: form.position,
+      enabled: form.enabled,
+      fallbackMessage: form.fallbackMessage.trim() || null,
+    };
     submitInFlight.current = true; setSaving(true); setError('');
     try {
       const data = hasConfiguration ? await updateChatbotConfiguration(targetTenantId, payload) : await createChatbotConfiguration(targetTenantId, payload);
