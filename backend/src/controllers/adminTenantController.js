@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Tenant = require('../models/Tenant');
+const { defaultTenantCache } = require('../services/tenantCacheService');
 
 // Allowed fields for creation and updates to prevent mass assignment
 const ALLOWED_CREATE_FIELDS = ['name', 'slug', 'status', 'contactEmail', 'websiteUrl', 'businessType'];
@@ -583,6 +584,7 @@ async function updateTenant(req, res, next) {
     }
 
     await tenant.save();
+    defaultTenantCache.invalidateTenantId(tenant._id);
 
     return res.status(200).json({
       success: true,
@@ -669,6 +671,7 @@ async function updateTenantStatus(req, res, next) {
     const previousStatus = tenant.status;
     tenant.status = status;
     await tenant.save();
+    defaultTenantCache.invalidateTenantId(tenant._id);
 
     // Audit logging: Explicit and auditable status change log without sensitive data
     console.log(

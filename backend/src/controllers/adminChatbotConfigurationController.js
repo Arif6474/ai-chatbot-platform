@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Tenant = require('../models/Tenant');
 const ChatbotConfiguration = require('../models/ChatbotConfiguration');
+const { defaultTenantCache } = require('../services/tenantCacheService');
 
 const CONFIG_FIELDS = ['displayName', 'welcomeMessage', 'primaryColor', 'position', 'enabled', 'fallbackMessage'];
 const sendError = (res, status, message, code) => res.status(status).json({ success: false, error: { message, code } });
@@ -73,6 +74,7 @@ async function createConfiguration(req, res, next) {
     const valueError = validateValues(req.body);
     if (valueError) return sendError(res, 400, valueError, 'VALIDATION_ERROR');
     const configuration = await ChatbotConfiguration.create({ tenantId: tenant._id, ...normalizedValues(req.body) });
+    defaultTenantCache.invalidateTenantId(tenant._id);
     return res.status(201).json({ success: true, data: { configuration } });
   } catch (error) {
     if (error?.code === 11000) return sendError(res, 409, 'A chatbot configuration already exists for this tenant', 'CONFIG_CONFLICT');
@@ -92,6 +94,7 @@ async function updateConfiguration(req, res, next) {
     if (!configuration) return sendError(res, 404, 'Chatbot configuration not found for this tenant', 'CONFIG_NOT_FOUND');
     Object.assign(configuration, normalizedValues(req.body));
     await configuration.save();
+    defaultTenantCache.invalidateTenantId(tenant._id);
     return res.json({ success: true, data: { configuration } });
   } catch (error) { next(error); }
 }
@@ -107,6 +110,7 @@ async function updateEnabled(req, res, next) {
     if (!configuration) return sendError(res, 404, 'Chatbot configuration not found for this tenant', 'CONFIG_NOT_FOUND');
     configuration.enabled = req.body.enabled;
     await configuration.save();
+    defaultTenantCache.invalidateTenantId(tenant._id);
     return res.json({ success: true, data: { configuration } });
   } catch (error) { next(error); }
 }

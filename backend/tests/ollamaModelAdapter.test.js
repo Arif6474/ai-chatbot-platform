@@ -9,7 +9,15 @@ describe('Ollama model adapter', () => {
     const adapter = new OllamaModelAdapter({ fetchImpl, config });
     await expect(adapter.generate(prompts)).resolves.toEqual({ text: 'Open Monday to Friday.' });
     expect(fetchImpl).toHaveBeenCalledWith(`${config.OLLAMA_BASE_URL}/api/generate`, expect.objectContaining({ method: 'POST' }));
-    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({ model: config.OLLAMA_MODEL, stream: false, options: { num_predict: 100 } });
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).toMatchObject({ model: config.OLLAMA_MODEL, stream: false, options: { num_predict: 100, num_thread: 3 } });
+  });
+
+  it('respects explicitly configured OLLAMA_NUM_THREADS in generation options', async () => {
+    const customConfig = { ...config, OLLAMA_NUM_THREADS: 4 };
+    const fetchImpl = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ response: 'Custom thread response.' }) });
+    const adapter = new OllamaModelAdapter({ fetchImpl, config: customConfig });
+    await adapter.generate(prompts);
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).options).toMatchObject({ num_predict: 100, num_thread: 4 });
   });
 
   it('returns safe error codes for timeout, connection, HTTP, and malformed responses', async () => {
@@ -34,6 +42,11 @@ describe('Ollama model adapter', () => {
   it('validates adapter configuration without exposing infrastructure errors', () => {
     expect(() => validateAdapterConfig({ ...config, OLLAMA_MODEL: '' })).toThrow(/Invalid Ollama adapter configuration/);
     expect(() => validateAdapterConfig({ ...config, OLLAMA_TIMEOUT_MS: 120001 })).toThrow(/Invalid Ollama timeout configuration/);
+    expect(() => validateAdapterConfig({ ...config, OLLAMA_OUTPUT_TOKENS: 0 })).toThrow(/Invalid Ollama output token configuration/);
+    expect(() => validateAdapterConfig({ ...config, OLLAMA_OUTPUT_TOKENS: 1025 })).toThrow(/Invalid Ollama output token configuration/);
+    expect(() => validateAdapterConfig({ ...config, OLLAMA_NUM_THREADS: 0 })).toThrow(/Invalid Ollama thread configuration/);
+    expect(() => validateAdapterConfig({ ...config, OLLAMA_NUM_THREADS: 65 })).toThrow(/Invalid Ollama thread configuration/);
+    expect(() => validateAdapterConfig({ ...config, OLLAMA_NUM_THREADS: 'four' })).toThrow(/Invalid Ollama thread configuration/);
     expect(() => new OllamaModelAdapter({ fetchImpl: null, config })).toThrow(/Fetch implementation/);
     expect(new ModelAdapterError('Model service is unavailable', 'MODEL_UNAVAILABLE').message).not.toContain('127.0.0.1');
   });

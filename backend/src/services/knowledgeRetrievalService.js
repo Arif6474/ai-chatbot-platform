@@ -36,13 +36,15 @@ function excerpt(value, remaining) {
   return `${value.slice(0, Math.max(0, remaining - 1)).trimEnd()}…`;
 }
 
-async function retrieveKnowledge({ tenantId, question }) {
+async function retrieveKnowledge({ tenantId, question, skipTenantCheck = false }) {
   if (!validateTenantId(tenantId)) throw new KnowledgeRetrievalError('Invalid tenant ID', 'INVALID_ID');
   if (typeof question !== 'string' || question.trim().length === 0) throw new KnowledgeRetrievalError('Question is required', 'INVALID_QUESTION');
   if (question.trim().length > MAX_QUESTION_LENGTH) throw new KnowledgeRetrievalError('Question exceeds the maximum length', 'QUESTION_TOO_LONG');
 
-  const tenantExists = await Tenant.exists({ _id: tenantId });
-  if (!tenantExists) throw new KnowledgeRetrievalError('Tenant not found', 'TENANT_NOT_FOUND');
+  if (!skipTenantCheck) {
+    const tenantExists = await Tenant.exists({ _id: tenantId });
+    if (!tenantExists) throw new KnowledgeRetrievalError('Tenant not found', 'TENANT_NOT_FOUND');
+  }
 
   const terms = tokenize(question.trim());
   const candidates = await BusinessContent.find({ tenantId, status: 'published' })

@@ -135,4 +135,22 @@ tenantSchema.set('toJSON', {
   },
 });
 
+tenantSchema.post(['save', 'updateOne', 'findOneAndUpdate', 'deleteOne'], function (doc) {
+  try {
+    const { defaultTenantCache } = require('../services/tenantCacheService');
+    const id = doc?._id || (this.getQuery && (this.getQuery()?._id || this.getQuery()?.tenantId));
+    const slug = doc?.slug || (this.getQuery && this.getQuery()?.slug);
+    if (id) defaultTenantCache.invalidateTenantId(id);
+    if (slug) defaultTenantCache.invalidateSlug(slug);
+    if (!id && !slug) defaultTenantCache.clear();
+  } catch (_) {}
+});
+
+tenantSchema.post('deleteMany', function () {
+  try {
+    const { defaultTenantCache } = require('../services/tenantCacheService');
+    defaultTenantCache.clear();
+  } catch (_) {}
+});
+
 module.exports = mongoose.model('Tenant', tenantSchema);

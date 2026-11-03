@@ -17,6 +17,9 @@ function validateAdapterConfig(config) {
   }
   if (!Number.isInteger(config.OLLAMA_TIMEOUT_MS) || config.OLLAMA_TIMEOUT_MS < 1000 || config.OLLAMA_TIMEOUT_MS > 120000) throw new Error('Invalid Ollama timeout configuration');
   if (!Number.isInteger(config.OLLAMA_OUTPUT_TOKENS) || config.OLLAMA_OUTPUT_TOKENS < 1 || config.OLLAMA_OUTPUT_TOKENS > 1024) throw new Error('Invalid Ollama output token configuration');
+  if (config.OLLAMA_NUM_THREADS !== undefined && (!Number.isInteger(config.OLLAMA_NUM_THREADS) || config.OLLAMA_NUM_THREADS < 1 || config.OLLAMA_NUM_THREADS > 64)) {
+    throw new Error('Invalid Ollama thread configuration');
+  }
 }
 
 function validatePrompts(systemPrompt, userPrompt) {
@@ -40,13 +43,23 @@ class OllamaModelAdapter {
     validatePrompts(systemPrompt, userPrompt);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.OLLAMA_TIMEOUT_MS);
+    const numThreads = this.config.OLLAMA_NUM_THREADS || 3;
     try {
       let response;
       try {
         response = await this.fetchImpl(`${this.config.OLLAMA_BASE_URL}/api/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: this.config.OLLAMA_MODEL, system: systemPrompt, prompt: userPrompt, stream: false, options: { num_predict: this.config.OLLAMA_OUTPUT_TOKENS } }),
+          body: JSON.stringify({
+            model: this.config.OLLAMA_MODEL,
+            system: systemPrompt,
+            prompt: userPrompt,
+            stream: false,
+            options: {
+              num_predict: this.config.OLLAMA_OUTPUT_TOKENS,
+              num_thread: numThreads,
+            },
+          }),
           signal: controller.signal,
         });
       } catch (error) {

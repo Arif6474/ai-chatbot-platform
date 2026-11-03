@@ -51,7 +51,10 @@ const env = {
   OLLAMA_BASE_URL: parseOllamaBaseUrl(process.env.OLLAMA_BASE_URL),
   OLLAMA_MODEL: parseOllamaModel(process.env.OLLAMA_MODEL),
   OLLAMA_TIMEOUT_MS: parseBoundedInteger(process.env.OLLAMA_TIMEOUT_MS, 30000, 'OLLAMA_TIMEOUT_MS', 1000, 120000),
-  OLLAMA_OUTPUT_TOKENS: parseBoundedInteger(process.env.OLLAMA_OUTPUT_TOKENS, 300, 'OLLAMA_OUTPUT_TOKENS', 1, 1024),
+  OLLAMA_OUTPUT_TOKENS: parseBoundedInteger(process.env.OLLAMA_OUTPUT_TOKENS, 120, 'OLLAMA_OUTPUT_TOKENS', 1, 1024),
+  OLLAMA_NUM_THREADS: parseBoundedInteger(process.env.OLLAMA_NUM_THREADS, 3, 'OLLAMA_NUM_THREADS', 1, 64),
+  OLLAMA_MAX_CONCURRENCY: parseBoundedInteger(process.env.OLLAMA_MAX_CONCURRENCY, 1, 'OLLAMA_MAX_CONCURRENCY', 1, 32),
+  OLLAMA_MAX_QUEUE_SIZE: parseBoundedInteger(process.env.OLLAMA_MAX_QUEUE_SIZE, 5, 'OLLAMA_MAX_QUEUE_SIZE', 0, 100),
   // Single source of truth for allowed browser origins.
   // Used by both CORS middleware and server-side CSRF origin validation.
   ALLOWED_ORIGINS: (() => {

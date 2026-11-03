@@ -78,4 +78,23 @@ chatbotConfigurationSchema.set('toJSON', {
   },
 });
 
+chatbotConfigurationSchema.post(['save', 'updateOne', 'findOneAndUpdate', 'deleteOne'], function (doc) {
+  try {
+    const { defaultTenantCache } = require('../services/tenantCacheService');
+    const tenantId = doc?.tenantId || (this.getQuery && this.getQuery()?.tenantId);
+    if (tenantId) {
+      defaultTenantCache.invalidateTenantId(tenantId);
+    } else {
+      defaultTenantCache.clear();
+    }
+  } catch (_) {}
+});
+
+chatbotConfigurationSchema.post('deleteMany', function () {
+  try {
+    const { defaultTenantCache } = require('../services/tenantCacheService');
+    defaultTenantCache.clear();
+  } catch (_) {}
+});
+
 module.exports = mongoose.model('ChatbotConfiguration', chatbotConfigurationSchema);

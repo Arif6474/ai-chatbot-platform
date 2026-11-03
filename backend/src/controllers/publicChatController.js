@@ -5,6 +5,8 @@ const { retrieveKnowledge } = require('../services/knowledgeRetrievalService');
 const { buildGroundedPrompt } = require('../services/groundedPromptBuilder');
 const { OllamaModelAdapter } = require('../services/ollamaModelAdapter');
 const { recordUsageEvent } = require('../services/usageTrackingService');
+const { defaultConcurrencyManager, InferenceCapacityError } = require('../services/inferenceConcurrencyManager');
+const { defaultTenantCache } = require('../services/tenantCacheService');
 
 const MAX_MESSAGE_LENGTH = 500;
 const SESSION_TOKEN_REGEX = /^[0-9a-fA-F]{48}$/;
@@ -49,8 +51,10 @@ async function sendMessage(req, res, next) {
       );
     }
 
-    // Resolve tenant by slug
-    const tenant = await Tenant.findOne({ slug: tenantSlug });
+    // Resolve tenant and configuration from cache (or MongoDB on miss)
+    const tenantCache = req.tenantCache || defaultTenantCache;
+    const { tenant, config } = await tenantCache.getTenantAndConfig(tenantSlug);
+
     if (!tenant) {
       return sendError(res, 404, 'Tenant not found', 'TENANT_NOT_FOUND');
     }
@@ -59,8 +63,6 @@ async function sendMessage(req, res, next) {
       return sendError(res, 403, 'This business chatbot is currently inactive', 'TENANT_INACTIVE');
     }
 
-    // Verify ChatbotConfiguration exists and is enabled
-    const config = await ChatbotConfiguration.findOne({ tenantId: tenant._id });
     if (!config) {
       return sendError(res, 404, 'Chatbot configuration not found for this business', 'CHATBOT_NOT_CONFIGURED');
     }
@@ -69,29 +71,47 @@ async function sendMessage(req, res, next) {
       return sendError(res, 403, 'Chatbot service is currently disabled for this business', 'CHATBOT_DISABLED');
     }
 
-    // Resolve or create session scoped to tenant
+    // Resolve or create session AND retrieve knowledge in parallel
     let session;
+    let knowledge;
+
     if (sessionToken !== undefined) {
       if (typeof sessionToken !== 'string' || !SESSION_TOKEN_REGEX.test(sessionToken)) {
         return sendError(res, 400, 'Invalid session token format', 'INVALID_SESSION_TOKEN');
       }
 
-      session = await ChatSession.findOne({ tenantId: tenant._id, sessionToken });
-      if (!session) {
+      const [foundSession, retrievedKnowledge] = await Promise.all([
+        ChatSession.findOne({ tenantId: tenant._id, sessionToken }),
+        retrieveKnowledge({
+          tenantId: tenant._id.toString(),
+          question: message.trim(),
+          skipTenantCheck: true,
+        }),
+      ]);
+
+      if (!foundSession) {
         return sendError(res, 404, 'Session not found for this tenant', 'SESSION_NOT_FOUND');
       }
-    } else {
-      session = await ChatSession.create({
-        tenantId: tenant._id,
-      });
-      await recordUsageEvent({ tenantId: tenant._id, eventType: 'newSession' });
-    }
 
-    // Retrieve published knowledge for this tenant
-    const knowledge = await retrieveKnowledge({
-      tenantId: tenant._id.toString(),
-      question: message.trim(),
-    });
+      session = foundSession;
+      knowledge = retrievedKnowledge;
+    } else {
+      const [newSession, retrievedKnowledge] = await Promise.all([
+        (async () => {
+          const s = await ChatSession.create({ tenantId: tenant._id });
+          await recordUsageEvent({ tenantId: tenant._id, eventType: 'newSession' });
+          return s;
+        })(),
+        retrieveKnowledge({
+          tenantId: tenant._id.toString(),
+          question: message.trim(),
+          skipTenantCheck: true,
+        }),
+      ]);
+
+      session = newSession;
+      knowledge = retrievedKnowledge;
+    }
 
     // Build grounded prompt
     const { systemPrompt, userPrompt } = buildGroundedPrompt({
@@ -99,28 +119,49 @@ async function sendMessage(req, res, next) {
       knowledge,
     });
 
-    // Invoke model adapter
+    // Acquire bounded inference capacity slot
+    const concurrencyManager = req.concurrencyManager || defaultConcurrencyManager;
+    let releaseSlot;
+    try {
+      releaseSlot = await concurrencyManager.acquire();
+    } catch (concurrencyError) {
+      if (concurrencyError.name === 'InferenceCapacityError') {
+        return sendError(
+          res,
+          concurrencyError.statusCode || 503,
+          concurrencyError.message,
+          concurrencyError.code || 'INFERENCE_CAPACITY_EXCEEDED'
+        );
+      }
+      throw concurrencyError;
+    }
+
+    // Invoke model adapter with guaranteed capacity release
     const adapter = req.modelAdapter || new OllamaModelAdapter();
     let modelResult;
     try {
-      modelResult = await adapter.generate({ systemPrompt, userPrompt });
-    } catch (modelError) {
-      // Metric Counting: Fallback responses handled by the server following a ModelAdapterError.
-      // Only ModelAdapterError (offline, timeout, etc.) is counted as a fallbackResponse.
-      // Other unforeseen programming/system errors are re-thrown to the global error handler.
-      if (modelError.name === 'ModelAdapterError') {
-        const fallbackText = config.fallbackMessage || 'I am currently unable to process your request. Please try again later or contact support.';
-        await recordUsageEvent({ tenantId: tenant._id, eventType: 'fallbackResponse' });
-        return res.status(200).json({
-          success: true,
-          data: {
-            response: fallbackText,
-            sessionToken: session.sessionToken,
-            fallbackApplied: true,
-          },
-        });
+      try {
+        modelResult = await adapter.generate({ systemPrompt, userPrompt });
+      } catch (modelError) {
+        // Metric Counting: Fallback responses handled by the server following a ModelAdapterError.
+        // Only ModelAdapterError (offline, timeout, etc.) is counted as a fallbackResponse.
+        // Other unforeseen programming/system errors are re-thrown to the global error handler.
+        if (modelError.name === 'ModelAdapterError') {
+          const fallbackText = config.fallbackMessage || 'I am currently unable to process your request. Please try again later or contact support.';
+          await recordUsageEvent({ tenantId: tenant._id, eventType: 'fallbackResponse' });
+          return res.status(200).json({
+            success: true,
+            data: {
+              response: fallbackText,
+              sessionToken: session.sessionToken,
+              fallbackApplied: true,
+            },
+          });
+        }
+        throw modelError;
       }
-      throw modelError;
+    } finally {
+      releaseSlot();
     }
 
     // Metric Counting: Successful model generations counted by the server.
@@ -162,7 +203,9 @@ async function getPublicConfiguration(req, res, next) {
       return sendError(res, 400, 'Invalid tenant identifier', 'INVALID_TENANT_SLUG');
     }
 
-    const tenant = await Tenant.findOne({ slug: tenantSlug });
+    const tenantCache = req.tenantCache || defaultTenantCache;
+    const { tenant, config } = await tenantCache.getTenantAndConfig(tenantSlug);
+
     if (!tenant) {
       return sendError(res, 404, 'Tenant not found', 'TENANT_NOT_FOUND');
     }
@@ -171,7 +214,6 @@ async function getPublicConfiguration(req, res, next) {
       return sendError(res, 403, 'This business chatbot is currently inactive', 'TENANT_INACTIVE');
     }
 
-    const config = await ChatbotConfiguration.findOne({ tenantId: tenant._id });
     if (!config) {
       return sendError(res, 404, 'Chatbot configuration not found for this business', 'CHATBOT_NOT_CONFIGURED');
     }
